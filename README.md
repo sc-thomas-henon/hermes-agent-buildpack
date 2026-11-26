@@ -97,6 +97,13 @@ application URL: `GET /v1/models`, `POST /v1/chat/completions`, … with
 `Authorization: Bearer $API_SERVER_KEY`. A plain `config.yaml` in
 `$HERMES_HOME` still works too and is merged underneath the env overrides.
 
+Provider API keys set as app config vars (any `*_API_KEY`, e.g.
+`OPENROUTER_API_KEY`) are bridged at container boot into `$HERMES_HOME/.env`
+(mode 0600) by `.profile.d/hermes.sh`: the gateway resolves provider
+credentials through the profile secret scope (`<home>/.env`) and, under
+multiplexing, a scope miss never falls back to `os.environ` — the env var
+alone would stay invisible to the model runtime.
+
 ## Deploying an app with this buildpack
 
 - Set `BUILDPACK_URL` on the Scalingo app (optionally `#branch` to pin a
