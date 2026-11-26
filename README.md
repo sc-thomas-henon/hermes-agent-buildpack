@@ -73,6 +73,38 @@ Provide your own `Procfile` in the app to override it.
 | `HERMES_AGENT_VERSION` | `v0.23.4` (see `conf/versions.sh`) | Git tag of NousResearch/hermes-agent to install |
 | `APT_FILE_MANIFEST` | `<app>/Aptfile` | Extra apt packages file |
 | `BUILDPACK_DEBUG` | unset | Set to any value for `set -x` in compile |
+| `HERMES_UV_EXTRAS` | unset | Space-separated uv extras installed from upstream's `uv.lock` at compile time (e.g. `messaging edge-tts` for Telegram/Discord bots + voice, `voice` for local faster-whisper STT) |
+| `HERMES_STT_PROVIDER` | unset | Baked into `/app/.hermes/config.yaml` as `stt.provider` (`local` \| `groq` \| `openai` \| …) |
+| `HERMES_STT_LANGUAGE` | unset | Baked as `stt.language` (e.g. `fr`) |
+| `HERMES_TTS_PROVIDER` | unset | Baked as `tts.provider` (`edge` \| `elevenlabs` \| `openai` \| …) |
+| `HERMES_TTS_VOICE` | unset | Baked as `tts.edge.voice` (e.g. `fr-FR-DeniseNeural`) |
+| `HERMES_VOICE_AUTO_TTS` / `HERMES_VOICE_AUTO_TTS_MODE` | unset | Baked as `voice.auto_tts` / `voice.auto_tts_mode` (gateway voice replies) |
+
+`HERMES_STT_*`/`HERMES_TTS_*`/`HERMES_VOICE_*` are compile-time only (they generate
+the baked `config.yaml`, since the container fs is ephemeral and these keys have
+no env mapping upstream). Secrets never go in `config.yaml`: any `*_API_KEY`,
+`*_BOT_TOKEN` and `VOICE_TOOLS_OPENAI_KEY` app env var is bridged into
+`$HERMES_HOME/.env` (0600) at container boot by `.profile.d/hermes.sh`.
+
+## Voice (Discord voice channels, Telegram/Discord voice notes)
+
+`libopus0` is installed for the Discord Opus codec and `ffmpeg` for audio
+conversion. To run a Discord bot with voice channels on the `hermes gateway run`
+app:
+
+1. Create a bot at <https://discord.com/developers/applications> (Bot → token),
+   enable the **Presence, Server Members and Message Content** privileged intents,
+   and invite it with the OAuth2 URL generated with scopes `bot applications.commands`
+   and permissions `309240908864` (text + Connect/Speak).
+2. Set app env vars: `DISCORD_BOT_TOKEN`, `DISCORD_ALLOWED_USERS=<your numeric
+   user id>` (Developer Mode → right-click your name → Copy ID), plus
+   `HERMES_UV_EXTRAS="messaging edge-tts"` (rebuild needed — extras are compile-time).
+3. STT: `GROQ_API_KEY` + `HERMES_STT_PROVIDER=groq` (fast, free tier), or add
+   `voice` to `HERMES_UV_EXTRAS` for local faster-whisper (no key, downloads the
+   model from Hugging Face on first use). TTS: `edge` (default, free) or
+   `ELEVENLABS_API_KEY` + `HERMES_TTS_PROVIDER=elevenlabs`.
+4. Redeploy, join a voice channel in Discord and send `/voice join` in a text
+   channel (DMs need no mention; server channels require @bot by default).
 
 Note: the Hermes source checkout (~330 MB) is shipped inside the app
 (`/app/hermes-src`) because upstream does not publish installable wheels.
