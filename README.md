@@ -33,9 +33,13 @@ The buildpack applies when the application root contains:
 
 `bin/compile`:
 
-1. Installs system packages with apt: `git`, `ripgrep`, `ffmpeg`, `nodejs`,
-   `python3.14` (+ venv/dev). Additional packages can be listed in an
+1. Fetches system packages (`ripgrep`, `ffmpeg`, `nodejs`) the Scalingo way:
+   `bin/compile` runs as a non-root user, so instead of `apt-get install` it
+   downloads the .debs with `apt-get -d` (apt state/cache redirected into the
+   build cache) and extracts them with `dpkg -x` into `/app/.apt`, exposed at
+   runtime via `.profile.d/000_apt.sh`. Extra packages can be listed in an
    `Aptfile` at the app root (path overridable with `APT_FILE_MANIFEST`).
+   `python3.14` itself comes from the scalingo-26 base image.
 2. Creates a virtualenv in `/app/.venv` using the stack's Python 3.14
    (on stacks without it, a uv-managed Python 3.14 is installed into the
    build cache as a fallback).
