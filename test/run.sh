@@ -30,7 +30,7 @@ echo "== release YAML =="
 cp -r "$BP_DIR/test/fixture-app" "$TMP/build"
 "$BP_DIR/bin/release" "$TMP/build" | tee "$TMP/release.yaml"
 grep -q "^default_process_types:" "$TMP/release.yaml"
-grep -q "web: hermes gateway run" "$TMP/release.yaml"
+grep -q "web: hermes dashboard" "$TMP/release.yaml"
 echo "OK"
 
 if [ "${1:-}" = "--compile" ]; then
