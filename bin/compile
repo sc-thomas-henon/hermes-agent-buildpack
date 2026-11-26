@@ -11,6 +11,7 @@ source "$BP_DIR/conf/versions.sh"
 source "$BP_DIR/lib/common.sh"
 source "$BP_DIR/lib/apt.sh"
 source "$BP_DIR/lib/python.sh"
+source "$BP_DIR/lib/web.sh"
 
 if [ -n "$(bp_env BUILDPACK_DEBUG "")" ]; then
   set -x
@@ -22,6 +23,7 @@ bp_install_system_packages "$BUILD_DIR"
 bp_setup_python "$BUILD_DIR"
 bp_install_hermes
 bp_install_app_requirements "$BUILD_DIR"
+bp_build_web_dist
 
 status "Writing .profile.d/hermes.sh"
 mkdir -p "${BUILD_DIR}/.profile.d"

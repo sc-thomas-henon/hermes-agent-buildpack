@@ -8,3 +8,5 @@ APT_PACKAGES="ripgrep ffmpeg nodejs"
 # The gateway's HTTP platforms (api_server, webhooks) need aiohttp, which upstream
 # only ships in opt-in extras (messaging/slack/matrix) — pin the same version.
 HERMES_EXTRA_PACKAGES="aiohttp==3.14.5"
+# pnpm version pinned by hermes-agent (pm/lock.json), enforced by its preinstall.
+PNPM_VERSION="12.15.0"
