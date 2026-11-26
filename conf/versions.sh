@@ -1,0 +1,5 @@
+HERMES_AGENT_VERSION="v0.23.4"
+HERMES_AGENT_REPO="https://github.com/NousResearch/hermes-agent.git"
+PYTHON_VERSION="3.14"
+UV_VERSION="0.13.10"
+APT_PACKAGES="git ripgrep ffmpeg nodejs python3.14 python3.14-venv python3.14-dev"
