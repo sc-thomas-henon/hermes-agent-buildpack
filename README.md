@@ -1,4 +1,8 @@
-# Hermes Agent Buildpack for Scalingo
+# Hermes Agent Dashboard Buildpack for Scalingo (branch `vibe/dashboard-4c9b18`)
+
+Variant of the Hermes Agent buildpack that deploys the **Hermes web dashboard**
+(`hermes dashboard`) instead of the bare gateway. The agent/gateway variant
+lives on branch `vibe/hermes-buildpack-4c9b18`.
 
 Custom [Scalingo](https://scalingo.com) buildpack that deploys
 [Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research)
@@ -52,6 +56,10 @@ The buildpack applies when the application root contains:
    cached in the build cache and only re-fetched when the tag changes.
 4. Installs the app's `requirements.txt` if present (`hermes-agent` lines are
    filtered out — the buildpack pins that version).
+5. Builds the web dashboard SPA (`hermes_cli/web_dist`) from the source checkout
+   with the pinned pnpm + `node scripts/build/web.mjs` (node from `.apt`), since
+   the assets are not in the git checkout. Cached via the pnpm store in the build
+   cache.
 5. Writes `.profile.d/hermes.sh` which exports:
    - `PATH` with `/app/.venv/bin` first,
    - `HERMES_HOME` (default `/app/.hermes`),
@@ -61,8 +69,13 @@ The buildpack applies when the application root contains:
 `bin/release` declares the default process type:
 
 ```
-web: hermes gateway run
+web: hermes dashboard --host 0.0.0.0 --port $PORT
 ```
+
+The dashboard is fail-closed: set `HERMES_DASHBOARD_BASIC_AUTH_USERNAME`,
+`HERMES_DASHBOARD_BASIC_AUTH_PASSWORD` and `HERMES_DASHBOARD_BASIC_AUTH_SECRET`
+as app env vars or it refuses to start. Do NOT set `API_SERVER_KEY` on this app
+(it would enable the api_server platform on the same `$PORT`).
 
 Provide your own `Procfile` in the app to override it.
 
