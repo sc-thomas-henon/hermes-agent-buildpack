@@ -95,6 +95,16 @@ The buildpack already points it at `0.0.0.0:$PORT` via `API_SERVER_HOST` /
 `API_SERVER_PORT`. The API is then reachable on the application URL
 (`/v1/chat/completions`, OpenAI-compatible).
 
+## Deploying an app with this buildpack
+
+- Set `BUILDPACK_URL` on the Scalingo app (optionally `#branch` to pin a
+  branch). With the Scalingo API, archive deploys (`POST /v1/sources`, PUT the
+  tar.gz, then `POST /v1/apps/:app/deployments` with `source_url`) require the
+  tar to contain a **single top-level folder** with the app files inside.
+- The gateway's HTTP platforms (`api_server`, webhooks) need `aiohttp`, which
+  upstream only ships in opt-in extras; the buildpack installs the pinned
+  version (`HERMES_EXTRA_PACKAGES` in `conf/versions.sh`).
+
 ## Local testing
 
 Run the buildpack scripts in the same image Scalingo uses:
