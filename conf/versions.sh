@@ -5,3 +5,6 @@ UV_VERSION="0.13.10"
 # Downloaded and extracted into .apt (see lib/apt.sh); python3.14 comes from the
 # scalingo-26 base image, git/curl are already in the stack image.
 APT_PACKAGES="ripgrep ffmpeg nodejs"
+# The gateway's HTTP platforms (api_server, webhooks) need aiohttp, which upstream
+# only ships in opt-in extras (messaging/slack/matrix) — pin the same version.
+HERMES_EXTRA_PACKAGES="aiohttp==3.14.5"

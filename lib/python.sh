@@ -62,6 +62,11 @@ bp_install_hermes() {
   status "Installing hermes-agent ${HERMES_AGENT_VERSION} dependencies (uv.lock, frozen)"
   (cd "${BUILD_DIR}/hermes-src" && UV_PROJECT_ENVIRONMENT="${VENV_DIR}" "$UV_BIN" sync --frozen --no-install-project --python "${VENV_DIR}/bin/python")
 
+  if [ -n "${HERMES_EXTRA_PACKAGES}" ]; then
+    status "Installing extra packages: ${HERMES_EXTRA_PACKAGES}"
+    "$UV_BIN" pip install --python "${VENV_DIR}/bin/python" ${HERMES_EXTRA_PACKAGES}
+  fi
+
   status "Writing bin/hermes wrappers"
   mkdir -p "${BUILD_DIR}/bin"
   cat > "${BUILD_DIR}/bin/hermes" <<'EOF'
