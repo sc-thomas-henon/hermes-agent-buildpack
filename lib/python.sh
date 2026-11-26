@@ -10,21 +10,27 @@ bp_ensure_uv() {
 }
 
 # bp_setup_python BUILD_DIR — creates BUILD_DIR/.venv with Python $PYTHON_VERSION; sets VENV_DIR
-# scalingo-26 ships python3.14 in the base image; on older stacks we fall back
-# to a uv-managed interpreter kept in CACHE_DIR so rebuilds stay fast.
+# The venv is always created with `uv venv --seed`: `python -m venv` needs
+# ensurepip (the python3.X-venv package), which stack base images often lack,
+# while uv seeds pip itself without ensurepip. scalingo-26 ships python3.14 in
+# the base image; on older stacks we fall back to a uv-managed interpreter kept
+# in CACHE_DIR so rebuilds stay fast.
 bp_setup_python() {
   local build_dir="$1"
   VENV_DIR="${build_dir}/.venv"
+  bp_ensure_uv
 
+  local py=""
   if command -v "python${PYTHON_VERSION}" >/dev/null 2>&1; then
     status "Using system python${PYTHON_VERSION}"
-    "python${PYTHON_VERSION}" -m venv "$VENV_DIR"
+    py="$(command -v "python${PYTHON_VERSION}")"
   else
-    bp_ensure_uv
     status "python${PYTHON_VERSION} not in the stack image, installing it with uv (cached)"
     "$UV_BIN" python install "${PYTHON_VERSION}"
-    "$UV_BIN" venv --seed --python "${PYTHON_VERSION}" "$VENV_DIR"
+    py="$("$UV_BIN" python find "${PYTHON_VERSION}")"
   fi
+
+  "$UV_BIN" venv --seed --python "$py" "$VENV_DIR"
 }
 
 # bp_install_hermes — installs hermes-agent from the pinned git tag.
