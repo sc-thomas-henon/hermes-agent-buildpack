@@ -33,13 +33,18 @@ bp_setup_python() {
   "$UV_BIN" venv --seed --python "$py" "$VENV_DIR"
 }
 
-# bp_install_hermes — installs hermes-agent from the pinned git tag.
+# bp_install_hermes — installs hermes-agent's locked dependencies from the pinned
+# git tag and ships the source checkout in the app.
 # Hermes only supports source-checkout installs (its setup.py refuses to build
 # wheels outside Nix, and wheels would miss bundled assets), so the checkout is
-# copied into BUILD_DIR (it becomes /app at runtime) and installed editable
-# into the venv with `uv sync --frozen`. Upstream's pyproject also relies on
-# [tool.uv] override-dependencies (e.g. Pillow), which only apply when uv
-# syncs the project itself: a plain `pip install git+...@tag` fails to resolve.
+# copied into BUILD_DIR (it becomes /app at runtime) and made importable at
+# runtime via PYTHONPATH=/app/hermes-src (see .profile.d/hermes.sh) plus the
+# bin/hermes wrapper below. The project itself is NOT installed into the venv
+# (--no-install-project): an editable install would record the build-time
+# absolute path (/tmp/build_<hash>/...) in site-packages, which does not exist
+# at runtime (/app). Upstream's pyproject also relies on [tool.uv]
+# override-dependencies (e.g. Pillow), which only apply when uv syncs the
+# project itself: a plain `pip install git+...@tag` fails to resolve.
 # The clone is cached in CACHE_DIR and only re-fetched when the tag changes.
 bp_install_hermes() {
   bp_ensure_uv
@@ -54,8 +59,24 @@ bp_install_hermes() {
   rm -rf "${BUILD_DIR}/hermes-src"
   cp -a "$src_cache" "${BUILD_DIR}/hermes-src"
   rm -rf "${BUILD_DIR}/hermes-src/.git"
-  status "Installing hermes-agent ${HERMES_AGENT_VERSION} (uv.lock, frozen, editable)"
-  (cd "${BUILD_DIR}/hermes-src" && UV_PROJECT_ENVIRONMENT="${VENV_DIR}" "$UV_BIN" sync --frozen --python "${VENV_DIR}/bin/python")
+  status "Installing hermes-agent ${HERMES_AGENT_VERSION} dependencies (uv.lock, frozen)"
+  (cd "${BUILD_DIR}/hermes-src" && UV_PROJECT_ENVIRONMENT="${VENV_DIR}" "$UV_BIN" sync --frozen --no-install-project --python "${VENV_DIR}/bin/python")
+
+  status "Writing bin/hermes wrappers"
+  mkdir -p "${BUILD_DIR}/bin"
+  cat > "${BUILD_DIR}/bin/hermes" <<'EOF'
+#!/usr/bin/env bash
+exec /app/.venv/bin/python -m hermes_cli.main "$@"
+EOF
+  cat > "${BUILD_DIR}/bin/hermes-agent" <<'EOF'
+#!/usr/bin/env bash
+exec /app/.venv/bin/python -c 'import sys; from agent.legacy_cli import main; sys.exit(main())' "$@"
+EOF
+  cat > "${BUILD_DIR}/bin/hermes-acp" <<'EOF'
+#!/usr/bin/env bash
+exec /app/.venv/bin/python -m acp_adapter.entry "$@"
+EOF
+  chmod +x "${BUILD_DIR}/bin/hermes" "${BUILD_DIR}/bin/hermes-agent" "${BUILD_DIR}/bin/hermes-acp"
 }
 
 # bp_install_app_requirements BUILD_DIR — installs the app's requirements.txt
