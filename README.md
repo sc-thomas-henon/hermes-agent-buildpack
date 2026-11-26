@@ -77,23 +77,25 @@ Provide your own `Procfile` in the app to override it.
 Note: the Hermes source checkout (~330 MB) is shipped inside the app
 (`/app/hermes-src`) because upstream does not publish installable wheels.
 
-## Enabling the HTTP API on Scalingo
+## Enabling the HTTP API on Scalingo (via environment variables)
 
-The gateway only starts its API server when it is enabled in the Hermes
-config (`$HERMES_HOME/config.yaml`, i.e. `/app/.hermes/config.yaml` in the
-app repo) with an access key:
+No `config.yaml` is needed: Hermes enables the `api_server` platform from the
+environment alone (`gateway/config_env.py` in hermes-agent). Set these as
+Scalingo config vars on the app (`scalingo env-set` or `POST /v1/apps/:app/variables`):
 
-```yaml
-platforms:
-  api_server:
-    enabled: true
-    extra:
-      key: "change-me-at-least-16-chars"
-```
+| Variable | Example | Effect |
+| --- | --- | --- |
+| `API_SERVER_KEY` | `scalingo env-set API_SERVER_KEY=$(openssl rand -hex 16)` | Enables the API server (key must be ≥ 16 chars) and is the Bearer token |
+| `API_SERVER_HOST` | `0.0.0.0` | Bind address (buildpack default) |
+| `API_SERVER_PORT` | `$PORT` | Bind port (buildpack maps Scalingo's `$PORT` by default) |
+| `API_SERVER_CORS_ORIGINS` | `https://example.com` | Optional CORS origins (CSV) |
+| `API_SERVER_MODEL_NAME` | `hermes-agent` | Optional model name override |
 
-The buildpack already points it at `0.0.0.0:$PORT` via `API_SERVER_HOST` /
-`API_SERVER_PORT`. The API is then reachable on the application URL
-(`/v1/chat/completions`, OpenAI-compatible).
+The buildpack's `.profile.d/hermes.sh` provides the `0.0.0.0` / `$PORT`
+defaults, and app config vars override them. The API is then reachable on the
+application URL: `GET /v1/models`, `POST /v1/chat/completions`, … with
+`Authorization: Bearer $API_SERVER_KEY`. A plain `config.yaml` in
+`$HERMES_HOME` still works too and is merged underneath the env overrides.
 
 ## Deploying an app with this buildpack
 

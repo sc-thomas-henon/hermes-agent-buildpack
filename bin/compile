@@ -29,8 +29,11 @@ cat > "${BUILD_DIR}/.profile.d/hermes.sh" <<'EOF'
 export PATH="/app/.venv/bin:/app/bin:$PATH"
 export PYTHONPATH="/app/hermes-src${PYTHONPATH:+:$PYTHONPATH}"
 export HERMES_HOME="${HERMES_HOME:-/app/.hermes}"
-export API_SERVER_HOST="0.0.0.0"
-export API_SERVER_PORT="${PORT:-8642}"
+# Scalingo-safe defaults; app config vars (env) win when set, e.g. via
+# `scalingo env-set API_SERVER_KEY=...` — setting API_SERVER_KEY also enables
+# the gateway's api_server platform (see gateway/config_env.py in hermes-agent).
+export API_SERVER_HOST="${API_SERVER_HOST:-0.0.0.0}"
+export API_SERVER_PORT="${API_SERVER_PORT:-${PORT:-8642}}"
 EOF
 
 status "Done"
